@@ -13,26 +13,34 @@
 #include <vector>
 
 #include "udef.h"
+#include "bitstreamer.h"
+#include "huffman.h"
 
 using std::cout;
 using std::endl;
 using std::cerr;
-using std::fstream;
+using std::ofstream;
+using std::ifstream;
 using std::size_t;
 using std::vector;
 using std::ios_base;
 using std::ios;
 
+byte *buffer = nullptr;
 clock_t timekeeper;
 
 typedef struct _file{
 
-	fstream fp;
-	unsigned int length;
+	ifstream ifp;
+	ofstream ofp;
+
+	unsigned int ilength;
+	unsigned int olength;
+
 
 } ifile;
 
-ifile* init_file(char *pfile);
+ifile* init_file(string option, char *pinfile, char *poutfile);
 byte *load_file(char *pfile, unsigned int length);
 void generate_frequency_table(vector<int> &rfreqs, unsigned int len, byte *buffer);
 
@@ -41,53 +49,114 @@ int main(int argc, char **argv) {
 	if(argc != 4){
 		HELP()
 		return EXIT_FAILURE;
+	} else{
+		timekeeper = clock();
+		std::string option = argv[0x1];
+		ifile *infile;
+		huffman huff;
+
+		if(option == "-c"){
+			vector<int> frequencies(UCHAR_MAX, 0);
+
+			infile = init_file(option, CMD_INPUT_FILE, CMD_OUTPUT_FILE);
+			if(!infile){
+				cerr << "Unable to open input file." << endl;
+				return EXIT_FAILURE;
+			}
+
+			generate_frequency_table(frequencies, infile->ilength, buffer);
+
+			bitstreamer bitout(infile->ifp, infile->ofp);
+
+			huff.buildTreeComp(frequencies, infile->ilength, bitout);
+
+			while(1) {
+				byte sym = infile->ifp.get();
+			    if(infile->ifp.eof())
+			    	break;
+			   huff.encode(sym, bitout);
+			}
+
+			bitout.padding();
+			infile->olength = infile->ofp.tellp();
+		}else if(option == "-d"){
+			infile = init_file(option, CMD_INPUT_FILE, CMD_OUTPUT_FILE);
+			bitstreamer bitout(infile->ifp, infile->ofp);
+			unsigned int chCnt = huff.buildTreeUncomp(bitout);
+			int sym;
+			unsigned int counter = 0;
+			while( counter != chCnt ) {
+
+			    sym = huff.decode( bitout );
+
+			    if( sym == -1 )
+			      break;
+
+			    infile->ofp.put((byte)sym);
+			    counter++;
+			  }
+			  infile->ofp.seekp( 0, infile->ofp.end);
+			  infile->olength = infile->ofp.tellp();
+
+		} else {
+			HELP()
+			return EXIT_FAILURE;
+		}
+		if(buffer)
+			delete [] buffer;
+		if(infile){
+			infile->ifp.close();
+			infile->ofp.close();
+			delete infile;
+		}
 	}
-	byte *buffer;
-	timekeeper = clock_t();
-	vector<int> symbolFrequency(UCHAR_MAX, 0);
-	ifile *infile = init_file(CMD_INPUT_FILE);
-	ifile *outfile;
 
-	if(!infile){
-		cerr << "Unable to open input file." << endl;
-		return EXIT_FAILURE;
-	}
-
-	buffer = load_file(CMD_INPUT_FILE, infile->length);
-	if(!buffer){
-		cerr << "Unable to read input file." << endl;
-		return EXIT_FAILURE;
-	}
-
-	generate_frequency_table(symbolFrequency, infile->length, buffer);
-
-	outfile = new ifile;
-	outfile->fp.open(CMD_OUTPUT_FILE, ios::out | ios::binary | ios::trunc);
-	if(!outfile->fp.is_open()){
-		cerr << "Unable to open file for writing.. exiting.." << endl;
-		delete [] buffer;
-		delete infile;
-		delete outfile;
-		return EXIT_FAILURE;
-	}
-
+	timekeeper = clock() - timekeeper;
 
 	return EXIT_SUCCESS;
 }
 
 
-ifile* init_file(char *pfile){
+ifile* init_file(string option, char *pinfile, char *poutfile){
 	ifile *ipfile = new ifile;
 
-	FILE *fp = fopen(pfile, "rb");
+	FILE *fp = fopen(pinfile, "rb");
 	if( !fp ){
 		cout << "Invalid input file. No file was opened. Please try again." << endl;
 		return nullptr;
 	}
 
 	fseek(fp, 0, SEEK_END);
-	ipfile->length = ftell(fp);
+	ipfile->ilength = ftell(fp);
 	fclose(fp);
+
+	if(option == "-c"){
+		::buffer = load_file(pinfile, ipfile->ilength);
+		if(!buffer){
+			cerr << "Unable to read input file." << endl;
+			delete ipfile;
+			delete [] buffer;
+			return nullptr;
+		}
+
+		ipfile->ofp.open(poutfile, ios::out | ios::binary | ios::trunc);
+		if(!ipfile->ofp.is_open()){
+			cerr << "Unable to open file for writing.. exiting.." << endl;
+			delete [] buffer;
+			delete ipfile;
+			return nullptr;
+		}
+
+	} else{
+		ipfile->ofp.open(poutfile, ios::out | ios::binary);
+		if(!ipfile->ofp.is_open()){
+			cerr << "Unable to open file for writing.. exiting.." << endl;
+			delete ipfile;
+			return nullptr;
+		}
+	}
+
+	ipfile->ifp.open(pinfile, ios::binary);
 
 	return ipfile;
 }
@@ -103,13 +172,11 @@ byte *load_file(char *pfile, unsigned int length){
 	}
 
 	read_count = fread(buffer, sizeof(byte), length, fp);
-
 	if(read_count != length){
 		return nullptr;
 	}
 
 	fclose(fp);
-
 	return buffer;
 }
 

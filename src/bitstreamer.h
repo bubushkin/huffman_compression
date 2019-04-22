@@ -10,17 +10,23 @@
 
 #include <iostream>
 
-using std::fstream;
+using std::istream;
+using std::ostream;
 
 class bitstreamer {
 
 private:
-	unsigned char buffer;
-	int bitcount;
-	fstream &fp;
+	istream &ifp;
+	unsigned char inbuffer;
+	int inbitcount;
+	ostream &ofp;
+	unsigned char outbuffer;
+	int outbitcount;
+
 
 public:
-	bitstreamer(fstream &stream) :fp(stream), buffer(0), bitcount(0) {}
+	bitstreamer(istream &is, ostream &os):
+		ifp(is), ofp(os), inbuffer(0), outbuffer(0), inbitcount(8), outbitcount(0) {}
 
 	void padding();
 

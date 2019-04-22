@@ -6,47 +6,49 @@
  */
 
 #include "bitstreamer.h"
+#include <typeinfo>
 
 void bitstreamer::padding() {
-  if( this->bitcount )
-    for(int i = this->bitcount; i <= 8; i++)
+  if( this->outbitcount )
+    for(int i = this->outbitcount; i <= 8; i++)
       this->writeBit(0);
 }
 
 void bitstreamer::flush() {
 
-  this->fp.put(this->buffer);
-  this->buffer  = 0;
-  this->bitcount = 0;
+  this->ofp.put(this->outbuffer);
+  this->outbuffer  = 0;
+  this->outbitcount = 0;
 
 }
 
 void bitstreamer::writeBit( unsigned int bit ) {
-  if( this->bitcount == 8 )
+  if( this->outbitcount == 8 )
 	  this->flush();
-  int mask = ~(1 << this->bitcount);
-  this->buffer = (this->buffer & mask) | (bit << this->bitcount);
-  this->bitcount++;
+  int mask = ~(1 << this->outbitcount);
+  this->outbuffer = (this->outbuffer & mask) | (bit << this->outbitcount);
+  this->outbitcount++;
 }
 
 void bitstreamer::fill() {
-  this->buffer = this->fp.get();
-  if(this->fp.eof()) {
-	  this->bitcount = -1;
+
+  this->inbuffer = this->ifp.get();
+  if(this->ifp.eof()) {
+	  this->inbitcount = -1;
 	  return;
   }
-  this->bitcount = 0;
+  this->inbitcount = 0;
 }
 
 unsigned int bitstreamer::readBit() {
-  if(this->bitcount == 8 )
+  if(this->inbitcount == 8 )
     this->fill();
 
-  if(this->bitcount == -1)
+  if(this->inbitcount == -1)
     return 2;
 
-  unsigned int nextBit = ((this->buffer & (1 << this->bitcount)) >> this->bitcount);
-  this->bitcount++;
+  unsigned int nextBit = ((this->inbuffer & (1 << this->inbitcount)) >> this->inbitcount);
+  this->inbitcount++;
 
   return nextBit;
 }

@@ -15,7 +15,7 @@ minheap::~minheap() {
 
 void minheap::destruct(vector<node*> &rbuffer){
     for(int i = 0; i < rbuffer.size(); i++){
-        delete buffer[i];
+        delete rbuffer[i];
     }
 }
 
@@ -36,18 +36,18 @@ int minheap::getSize() const {
 }
 
 void minheap::removeNodeAt(int index) {
-    this->buffer.erase(this->buffer.begin() + index, this->buffer.begin() + index + 0x1);
+    this->buffer.erase(this->buffer.begin() + index, this->buffer.begin() + index + 1);
     this->heapsize--;
-    this->minHeapify(0x0);
+    this->minHeapify(0);
 }
 
 void minheap::siftUp(int index) {
 
     int parentIdx;
-    if(index != 0x0){
+    if(index != 1){
         parentIdx = this->getParentIdx(index);
-        if(this->buffer.at(parentIdx)->frequency > this->buffer.at(index)->frequency){
-            std::swap(this->buffer.at(parentIdx), this->buffer.at(index));
+        if(this->buffer[parentIdx]->count > this->buffer[index]->count){
+            std::swap(this->buffer[parentIdx], this->buffer[index]);
             this->siftUp(parentIdx);
         }
     }
@@ -57,11 +57,11 @@ void minheap::insertNode(node *pnode) {
 
     this->buffer.push_back(pnode);
     this->heapsize++;
-    this->siftUp(this->heapsize - 0x1);
+    this->siftUp(this->heapsize - 1);
 
 }
 
-void minheap::buildMinHeap(vector<int> &rfreqs){
+void minheap::buildMinHeap(const vector<int> &rfreqs){
 
 	for( int i = 0; i < UCHAR_MAX + 1; i++ ) {
 	  if( rfreqs[i] ) {
@@ -72,8 +72,8 @@ void minheap::buildMinHeap(vector<int> &rfreqs){
 	  }
 	}
 
-    for(int idx = floor((this->heapsize - 0x1) / 2); idx >= 0x0; idx--){
-        minHeapify(idx);
+    for(int i = floor((this->heapsize - 1) / 2); i >= 0; i--){
+        this->minHeapify(i);
     }
 }
 
@@ -83,33 +83,32 @@ void minheap::minHeapify(unsigned int index) {
     unsigned int left_idx = this->getLeftChildIdx(index);
     unsigned int right_idx = this->getRightChildIdx(index);
 
-    if((left_idx < this->heapsize) && (this->buffer.at(left_idx)->frequency < this->buffer.at(index)->frequency)){
+    if((left_idx < this->heapsize) && (this->buffer[left_idx]->count < this->buffer[index]->count)){
         min_idx = left_idx;
     } else{
         min_idx = index;
     }
-    if((right_idx < this->heapsize) && (this->buffer.at(right_idx)->frequency < this->buffer.at(min_idx)->frequency)){
+    if((right_idx < this->heapsize) && (this->buffer[right_idx]->count < this->buffer[min_idx]->count)){
         min_idx = right_idx;
     }
 
     if(min_idx != index){
-        std::swap(this->buffer.at(index), this->buffer.at(min_idx));
+        std::swap(this->buffer[index], this->buffer[min_idx]);
         this->minHeapify(min_idx);
     }
 }
 
 node* minheap::getNodeAt(int index) {
-    return this->buffer.at(index);
+    return this->buffer[index];
 
 }
 
 node* minheap::extractMin() {
-    node *node = this->getNodeAt(0x0);
-    this->removeNodeAt(0x0);
+    node *node = this->getNodeAt(0);
+    this->removeNodeAt(0);
     return node;
 }
 
 void minheap::enqueue(node *pnode) {
     this->insertNode(pnode);
 }
-

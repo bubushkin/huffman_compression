@@ -34,7 +34,7 @@ public:
 
     node* getNodeAt(int);
 
-    void buildMinHeap(vector<int> &frequencies);
+    void buildMinHeap(const vector<int> &frequencies);
 
     int getParentIdx(int);
     int getLeftChildIdx(int);
@@ -55,5 +55,7 @@ public:
 
     void printBuffer();
 };
+
+
 
 #endif /* MINHEAP_H_ */

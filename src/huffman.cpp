@@ -9,6 +9,7 @@
 #include <queue>
 #include <tgmath.h>
 #include <algorithm>
+#include "minheap.h"
 
 huffman::~huffman() {
 	// TODO Auto-generated destructor stub
@@ -40,50 +41,100 @@ unsigned int huffman::buildTreeUncomp(bitstreamer &bin) {
 }
 
 unsigned int huffman::readCharCount( bitstreamer &bitIn ) {
-  //! To handle huge files (2^64 bytes = 18 446 744 073 709 551 616)
   unsigned long long int count  = 0;
   byte ch                       = 0;
 
   for( int i = 32; i > 0; i -= 8 ) {
     ch = 0;
 
-    //! Read next 8-bits to get 1/4th info of character count
     for( int j = 0; j < 8; j++ )
       ch = ch | (bitIn.readBit() << j);
 
-    //! Construct character count bytewise
     count += (unsigned int) ch * pow( 2, i );
   }
 
-  //! Divide by 2^8 to get the integer value of character count then return it
   count /= pow( 2, 8 );
   return ((unsigned int) count);
 }
 
 
 void huffman::readHeader( node *par, node* &rnode, bitstreamer &bitIn ) {
-  //! Read the next bit from compressed file
-  unsigned int bit = bitIn.readBit();
 
-  //! If read bit is 0
-  if( !bit ) {
-    node *p = new node(0, 0, nullptr, nullptr, nullptr, false);
-    p->parent = par;
-    rnode = p;
+	unsigned int bit = bitIn.readBit();
 
-    this->readHeader( p, p->leftChild, bitIn );
-    this->readHeader( p, p->rightChild, bitIn );
+	if( !bit ) {
+		node *p = new node(0, 0, nullptr, nullptr, nullptr, false);
+		p->parent = par;
+		rnode = p;
+		this->readHeader( p, p->leftChild, bitIn );
+		this->readHeader( p, p->rightChild, bitIn );
+	}
+
+	else {
+		byte ch = 0;
+		for( int i = 0; i < 8; i++ )
+			ch = ch | (bitIn.readBit() << i);
+
+		node *p = new node(ch, 0, nullptr, nullptr, nullptr, true);
+		p->parent = par;
+		rnode      = p;
+	}
+}
+
+
+void huffman::buildTree(const vector<int> &rfreqs, unsigned int length, bitstreamer &rout ) {
+  node *rightChild, *top, *leftChild;
+
+  minheap heap;
+  heap.buildMinHeap(rfreqs);
+
+
+  priority_queue< node*, vector< node* >, comparator > pq;
+  for( int i = 0; i < UCHAR_MAX + 1; i++ ) {
+	  if( rfreqs[i] ) {
+		  node *p = new node((byte) i, rfreqs[i], nullptr, nullptr, nullptr, true);
+		  pq.push( p );
+		  this->vleaves[i] = p;
+	  }
   }
-  else {
-    byte ch = 0;
 
-    for( int i = 0; i < 8; i++ )
-      ch = ch | (bitIn.readBit() << i);
+  while( pq.size() && pq.size() != 1 ) {
+    leftChild  = pq.top();
+    pq.pop();
 
-    node *p = new node(ch, 0, nullptr, nullptr, nullptr, true);
-    p->parent = par;
-    rnode      = p;
+    rightChild = pq.top();
+    pq.pop();
+
+    top = new node( 0, (leftChild->count + rightChild->count), nullptr, nullptr, nullptr, false);
+
+    top->leftChild   = leftChild;
+    top->rightChild   = rightChild;
+    leftChild->parent  = top;
+    rightChild->parent = top;
+
+    pq.push(top);
   }
+
+  while(heap.getSize() > 0x1){
+      node *pleft = heap.extractMin();
+      node *pright = heap.extractMin();
+      node *pparent = new node( 0, (pleft->count + pright->count), nullptr, nullptr, nullptr, false);
+      pparent->leftChild = pleft;
+      pparent->rightChild = pright;
+      pleft->parent = pparent;
+      pright->parent = pparent;
+
+      heap.enqueue(pparent);
+  }
+  this->pnode = heap.extractMin();
+
+
+  if( pq.size() )
+    this->proot = pq.top();
+
+  this->writeHeader(this->pnode, rout);
+
+  this->writeCharCount(length, rout);
 }
 
 

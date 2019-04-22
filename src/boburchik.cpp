@@ -68,7 +68,8 @@ int main(int argc, char **argv) {
 
 			bitstreamer bitout(infile->ifp, infile->ofp);
 
-			huff.buildTreeComp(frequencies, infile->ilength, bitout);
+			//huff.buildTreeComp(frequencies, infile->ilength, bitout);
+			huff.buildTree(frequencies, infile->ilength, bitout);
 
 			while(1) {
 				byte sym = infile->ifp.get();

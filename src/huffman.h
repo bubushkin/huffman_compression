@@ -18,7 +18,10 @@ class huffman {
 private:
     static void destruct(node *proot);
     node *proot;
+
     vector<node*> vleaves;
+
+    node *pnode;
 
 public:
 
@@ -31,6 +34,7 @@ public:
     int decode(bitstreamer &in) const;
 
     void buildTreeComp(const vector<int> &rfreqs, unsigned int length, bitstreamer &rbout);
+    void buildTree(const vector<int> &rfreqs, unsigned int length, bitstreamer &rout );
 
     void writeHeader(node *pnode, bitstreamer &rbout);
 

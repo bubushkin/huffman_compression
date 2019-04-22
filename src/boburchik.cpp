@@ -80,6 +80,8 @@ int main(int argc, char **argv) {
 
 			bitout.padding();
 			infile->olength = infile->ofp.tellp();
+			cout << "Size of compressed file: " << infile->olength << endl;
+			cout << usedbits << " bits used in compressing the file."<< endl;
 
 		}else if(option == "-d"){
 			infile = init_file(option, CMD_INPUT_FILE, CMD_OUTPUT_FILE);
@@ -104,8 +106,6 @@ int main(int argc, char **argv) {
 			HELP()
 			return EXIT_FAILURE;
 		}
-		cout << "Size of compressed file: " << infile->olength << endl;
-		cout << usedbits << " bits used in compressing the file."<< endl;
 
 		if(buffer)
 			delete [] buffer;

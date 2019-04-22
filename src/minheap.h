@@ -26,7 +26,7 @@ private:
 
 public:
 	minheap():heapsize(0), capacity(0){
-		this->buffer = vector<node*>(UCHAR_MAX + 0x1, (node *)nullptr);
+		this->buffer = vector<node*>();
 	}
 	~minheap();
 

@@ -61,12 +61,13 @@ void minheap::insertNode(node *pnode) {
 
 }
 
-void minheap::buildMinHeap(const vector<int> &rfreqs){
+void minheap::buildMinHeap(const vector<int> &rfreqs, vector<node*> &reftable){
 
 	for( int i = 0; i < UCHAR_MAX + 1; i++ ) {
 	  if( rfreqs[i] ) {
 		  node *p = new node((byte) i, rfreqs[i], nullptr, nullptr, nullptr, true);
 		  this->buffer[i] = p;
+		  reftable[i] = p;
 		  this->heapsize++;
 		  this->capacity++;
 	  }

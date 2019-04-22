@@ -19,18 +19,18 @@ private:
     static void destruct(node *proot);
     node *proot;
 
-    vector<node*> vleaves;
+    vector<node*> reftable;
 
     node *pnode;
 
 public:
 
     explicit huffman() : proot(nullptr){
-            this->vleaves = vector<node*>(UCHAR_MAX + 0x1, (node *)nullptr);
+            this->reftable = vector<node*>(UCHAR_MAX + 0x1, (node *)nullptr);
     }
     ~huffman();
 
-    void encode(byte symbol, bitstreamer &os) const;
+    void encode(byte symbol, bitstreamer &os, unsigned long &usedbits) const;
     int decode(bitstreamer &in) const;
 
     void buildTreeComp(const vector<int> &rfreqs, unsigned int length, bitstreamer &rbout);

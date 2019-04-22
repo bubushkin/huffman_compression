@@ -54,6 +54,7 @@ int main(int argc, char **argv) {
 		std::string option = argv[0x1];
 		ifile *infile;
 		huffman huff;
+		unsigned long usedbits = 0;
 
 		if(option == "-c"){
 			vector<int> frequencies(UCHAR_MAX, 0);
@@ -68,18 +69,18 @@ int main(int argc, char **argv) {
 
 			bitstreamer bitout(infile->ifp, infile->ofp);
 
-			//huff.buildTreeComp(frequencies, infile->ilength, bitout);
 			huff.buildTree(frequencies, infile->ilength, bitout);
 
-			while(1) {
+			while(true) {
 				byte sym = infile->ifp.get();
 			    if(infile->ifp.eof())
 			    	break;
-			   huff.encode(sym, bitout);
+			   huff.encode(sym, bitout, usedbits);
 			}
 
 			bitout.padding();
 			infile->olength = infile->ofp.tellp();
+
 		}else if(option == "-d"){
 			infile = init_file(option, CMD_INPUT_FILE, CMD_OUTPUT_FILE);
 			bitstreamer bitout(infile->ifp, infile->ofp);
@@ -103,6 +104,9 @@ int main(int argc, char **argv) {
 			HELP()
 			return EXIT_FAILURE;
 		}
+		cout << "Size of compressed file: " << infile->olength << endl;
+		cout << usedbits << " bits used in compressing the file."<< endl;
+
 		if(buffer)
 			delete [] buffer;
 		if(infile){

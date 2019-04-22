@@ -34,7 +34,7 @@ public:
 
     node* getNodeAt(int);
 
-    void buildMinHeap(const vector<int> &frequencies);
+    void buildMinHeap(const vector<int> &frequencies, vector<node*> &reftable);
 
     int getParentIdx(int);
     int getLeftChildIdx(int);
